@@ -1,0 +1,6 @@
+true : bin_annot, safe_string
+
+<_b0> : -traverse
+<src> : include
+<test/**> : package(unix)
+<test/**> : package(b0.b00.std)

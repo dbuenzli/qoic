@@ -1,0 +1,9 @@
+{0 Qoic {%html: <span class="version">%%VERSION%%</span>%}}
+
+Qoic encodes and decodes {{:https://qoiformat.org/}QOI images}.
+
+{1:api API}
+
+{!modules:
+Qoic
+}
