@@ -109,7 +109,14 @@ val encode : Meta.t -> pixels -> Bigbytes.t
 
 (** Decoding errors. *)
 module Error : sig
-  type t
+  type t =
+  | Image_too_large of uint32 * uint32
+  | Invalid_channels of int
+  | Invalid_color_space of int
+  | Invalid_end_marker
+  | Invalid_image
+  | Not_a_qoi_file
+  | Truncated_chunk_stream (** *)
   (** The type for decoding errors. *)
 
   val to_string : t -> string
