@@ -3,10 +3,9 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-let strf = Printf.sprintf
-
 (* Programming errors. *)
 
+let strf = Printf.sprintf
 let err_img_too_large = "Image too large to be encoded"
 let err_img_size w h = strf "Invalid image size: %dx%d" w h
 let err_byte_size isize bsize =
@@ -227,7 +226,7 @@ let encode m p =
 (* Decoding *)
 
 module Error = struct
-  type t =
+  type kind =
   | Image_too_large of uint32 * uint32
   | Invalid_channels of int
   | Invalid_color_space of int
@@ -236,47 +235,54 @@ module Error = struct
   | Not_a_qoi_file
   | Truncated_chunk_stream
 
-  let to_string = function
-  | Image_too_large (w, h) -> strf "Image too large (%lux%lu)" w h
-  | Invalid_channels i -> strf "Invalid channels (%d)" i
-  | Invalid_color_space i -> strf "Invalid color space (%d)" i
-  | Invalid_end_marker -> "Invalid end marker"
-  | Invalid_image -> "Invalid image"
-  | Not_a_qoi_file -> "Not a QOI file"
-  | Truncated_chunk_stream -> "Truncated chunk stream"
+  let pp_str = Format.pp_print_string
+  let pf = Format.fprintf
+  let pp_kind ppf  = function
+  | Image_too_large (w, h) -> pf ppf "Image too large (%lux%lu)" w h
+  | Invalid_channels i -> pf ppf "Invalid channels (%d)" i
+  | Invalid_color_space i -> pf ppf "Invalid color space (%d)" i
+  | Invalid_end_marker -> pp_str ppf "Invalid end marker"
+  | Invalid_image -> pp_str ppf "Invalid image"
+  | Not_a_qoi_file -> pp_str ppf "Not a QOI file"
+  | Truncated_chunk_stream -> pp_str ppf "Truncated chunk stream"
+
+  type t = kind * int
+
+  let pp ppf (k, pos) = pf ppf "%d: %a" pos pp_kind k
+  let to_string e = Format.asprintf "%a" pp e
 end
 
 exception Err of Error.t
-let err e = raise (Err e)
+let err k pos = raise (Err (k, pos))
 
 let pixel_buffer m = match Meta.pixels_byte_length m with
 | Some len -> Bigbytes._create len
-| None -> err Int32.(Image_too_large (of_int (Meta.w m), of_int (Meta.h m)))
+| None -> err Int32.(Image_too_large (of_int (Meta.w m), of_int (Meta.h m))) 0
 
 let decode_header ?channels b =
-  if Bigbytes.length b < qoi_header_length then err Not_a_qoi_file else
+  if Bigbytes.length b < qoi_header_length then err Not_a_qoi_file 0 else
   let magic = Bigbytes.get_uint32_be b 0 in
-  if magic <> qoi_magic then err Not_a_qoi_file else
+  if magic <> qoi_magic then err Not_a_qoi_file 0 else
   let w = Bigbytes.get_uint32_be b 4 in
   let h = Bigbytes.get_uint32_be b 8 in
   let decoded_channels = match Bigbytes.get b 12 with
-  | 3 -> `Rgb | 4 -> `Rgba | i -> err (Invalid_channels i)
+  | 3 -> `Rgb | 4 -> `Rgba | i -> err (Invalid_channels i) 12
   in
   let channels = Option.value ~default:decoded_channels channels in
   let color_space = match Bigbytes.get b 13 with
-  | 0 -> `Srgb | 1 -> `Linear | i -> err (Invalid_color_space i)
+  | 0 -> `Srgb | 1 -> `Linear | i -> err (Invalid_color_space i) 13
   in
   let wi = Int32.unsigned_to_int w and hi = Int32.unsigned_to_int h in
   match wi, hi with
-  | None, _ | _, None -> err (Image_too_large (h, w))
+  | None, _ | _, None -> err (Image_too_large (h, w)) 4
   | Some w, Some h -> Meta.v color_space channels ~w ~h
 
 let decode_end_marker b =
   let first = Bigbytes.length b - qoi_end_marker_length in
-  if first < qoi_header_length then err Invalid_end_marker else
+  if first < qoi_header_length then err Invalid_end_marker first else
   let m0 = Bigbytes.get_uint32_be b (first    ) in
   let m1 = Bigbytes.get_uint32_be b (first + 4) in
-  if m0 <> 0l || m1 <> 1l then err Invalid_end_marker else ()
+  if m0 <> 0l || m1 <> 1l then err Invalid_end_marker first else ()
 
 let[@inline] set_pixel channels dst p r g b a =
   Bigbytes.set dst (p    ) r;
@@ -291,16 +297,16 @@ let decode_pixels src ~channels dst =
   let index = Index.create () in
   let rec loop run i p r g b a =
     if p > p_max
-    then (if run <> 0 || i <> i_max + 1 then err Invalid_image else ())
+    then (if run <> 0 || i <> i_max + 1 then err Invalid_image i_max else ())
     else
     if run > 0 then
       let p = set_pixel channels dst p r g b a in
       (loop[@tailcall]) (run - 1) i p r g b a
     else
-    if i > i_max then err Truncated_chunk_stream else
+    if i > i_max then err Truncated_chunk_stream i_max else
     let b1 = Bigbytes.get src i in
     if b1 = qoi_op_rgb then
-      if i + 3 > i_max then err Truncated_chunk_stream else
+      if i + 3 > i_max then err Truncated_chunk_stream i_max else
       let r = Bigbytes.get src (i + 1) in
       let g = Bigbytes.get src (i + 2) in
       let b = Bigbytes.get src (i + 3) in
@@ -309,7 +315,7 @@ let decode_pixels src ~channels dst =
       (loop[@tailcall]) run (i + 4) p r g b a
     else
     if b1 = qoi_op_rgba then
-      if i + 4 > i_max then err Truncated_chunk_stream else
+      if i + 4 > i_max then err Truncated_chunk_stream i_max else
       let r = Bigbytes.get src (i + 1) in
       let g = Bigbytes.get src (i + 2) in
       let b = Bigbytes.get src (i + 3) in
@@ -337,7 +343,7 @@ let decode_pixels src ~channels dst =
       (loop[@tailcall]) run (i + 1) p r g b a
     else
     if op = qoi_op_luma then
-      if i + 1 > i_max then err Truncated_chunk_stream else
+      if i + 1 > i_max then err Truncated_chunk_stream i_max else
       let b2 = Bigbytes.get src (i + 1) in
       let dg = (b1 land 0x3f) - 32 in
       let r = (r + dg - 8 + ((b2 lsr 4) land 0x0f)) land 0xFF in

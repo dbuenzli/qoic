@@ -109,7 +109,7 @@ val encode : Meta.t -> pixels -> Bigbytes.t
 
 (** Decoding errors. *)
 module Error : sig
-  type t =
+  type kind =
   | Image_too_large of uint32 * uint32
   | Invalid_channels of int
   | Invalid_color_space of int
@@ -117,7 +117,17 @@ module Error : sig
   | Invalid_image
   | Not_a_qoi_file
   | Truncated_chunk_stream (** *)
-  (** The type for decoding errors. *)
+  (** The type for kinds of decoding errors. *)
+
+  val pp_kind : Format.formatter -> kind -> unit
+  (** [pp_kind ppf k] formats [k] in english on [ppf]. *)
+
+  type t = kind * int
+  (** The type for errors. The kind of error and the byte offset where it
+      occured. *)
+
+  val pp : Format.formatter -> t -> unit
+  (** [pp ppf e] formats [e] in english on [ppf]. *)
 
   val to_string : t -> string
   (** [to_string e] is an english error message for [e]. *)
