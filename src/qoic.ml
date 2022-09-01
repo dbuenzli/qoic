@@ -221,7 +221,7 @@ let encode m p =
   in
   let channels = channel_count (Meta.channels m) in
   encode_header dst m;
-  encode_pixels p channels dst
+  encode_pixels p ~channels dst
 
 (* Decoding *)
 
