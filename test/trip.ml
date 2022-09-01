@@ -3,7 +3,7 @@
    Distributed under the ISC license, see terms at the end of the file.
   ---------------------------------------------------------------------------*)
 
-open B00_std
+open B0_std
 open Result.Syntax
 
 let green = Fmt.tty_string [`Fg `Green]
@@ -12,7 +12,7 @@ let log = Format.printf
 let log_trip_ok () = log " %a@." green "OK"
 let log_trip_error e = log "@\n%a: %s@\n@." red "Error" e
 let log_final_result span n fail =
-  let pp_span = Time.Span.pp in
+  let pp_span = Mtime.Span.pp in
   if fail <> 0
   then log "[%a] %d out of %d files did not round trip.@." red "FAIL" fail n
   else log "[ %a ] All %d file(s) round trip in %a.@." green "OK" n pp_span span
@@ -56,13 +56,13 @@ let trips files =
   Log.if_error ~use:1 @@
   let* files = match files with [] -> default_files () | files -> Ok files in
   let rec loop t n fail = function
-  | [] -> log_final_result (Time.count t) n fail; Ok fail
+  | [] -> log_final_result (Os.Mtime.count t) n fail; Ok fail
   | f :: fs ->
       match trip f with
       | Error e -> log_trip_error e; loop t (n + 1) (fail + 1) fs
       | Ok () -> log_trip_ok (); loop t (n + 1) fail fs
   in
-  loop (Time.counter ()) 0 0 files
+  loop (Os.Mtime.counter ()) 0 0 files
 
 let main () =
   let usage = "Usage: trip [FILE.qoi]…" in

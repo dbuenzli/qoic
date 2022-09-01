@@ -1,5 +1,4 @@
 open B0_kit.V000
-open B00_std
 open Result.Syntax
 
 (* OCaml library names *)
@@ -11,7 +10,7 @@ let unix = B0_ocaml.libname "unix"
    https://github.com/ocaml/ocaml/issues/10833 *)
 let bigarray = B0_ocaml.libname "bigarray"
 
-let b0_b00_std = B0_ocaml.libname "b0.b00.std"
+let b0_std = B0_ocaml.libname "b0.std"
 
 (* Libraries *)
 
@@ -27,7 +26,7 @@ let bigfile_srcs = [test_src "bigfile.mli"; test_src "bigfile.ml" ]
 
 let test =
   let srcs = test_src "trip.ml" :: bigfile_srcs  in
-  let requires = [ b0_b00_std; qoic; unix; bigarray ] in
+  let requires = [ b0_std; qoic; unix; bigarray ] in
   let meta =
     B0_meta.(empty |> tag test |>
              add B0_unit.Action.exec_cwd B0_unit.Action.scope_cwd)
