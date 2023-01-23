@@ -4,7 +4,7 @@ To download the specification test images to the [`images`](images/) directory
 issue: 
 
 ```
-b0 cmd download-spec-images 
+b0 -- download-spec-images 
 ```
 
 # Test image round tripping
@@ -12,8 +12,8 @@ b0 cmd download-spec-images
 To round trip the images 
 
 ```sh
-b0 -a trip --              # Round trip images from images/
-b0 -a trip -- [FILE.qoi]…  # Round trip given images.
+b0 -- trip              # Round trip images from images/
+b0 -- trip [FILE.qoi]…  # Round trip given images.
 ```
 
 
