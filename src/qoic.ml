@@ -360,7 +360,9 @@ let decode_pixels src ~channels dst =
     else
     assert false
   in
-  loop 0 qoi_header_length 0 0 0 0 0xFF
+  let r = 0 and g = 0 and b = 0 and a = 0xFF in
+  Index.set index ~color_idx:(Index.color_idx r g b a) r g b a;
+  loop 0 qoi_header_length 0 r g b a
 
 let decode ?channels src =
   try
