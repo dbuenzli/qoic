@@ -45,7 +45,11 @@ let trip file =
   let* meta, pixels = Qoic.decode' bytes in
   log " %a@?" Qoic.Meta.pp meta;
   let bytes' = Qoic.encode meta pixels in
-  if bytes <> bytes' then Error ("\n" ^ diff file bytes bytes') else Ok ()
+  if bytes <> bytes' then
+    let outf = Fpath.to_string Fpath.(file -+ "-notrip.qoi") in
+    let* () = Bigfile.write outf bytes' in
+    Error ("\n" ^ diff file bytes bytes')
+  else Ok ()
 
 let default_files () =
   let default_dir = Fpath.v "images" in
