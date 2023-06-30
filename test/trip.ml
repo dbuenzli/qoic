@@ -6,8 +6,8 @@
 open B0_std
 open Result.Syntax
 
-let green = Fmt.tty_string [`Fg `Green]
-let red = Fmt.tty_string [`Fg `Red]
+let green = Fmt.st [`Fg `Green]
+let red = Fmt.st [`Fg `Red]
 let log = Format.printf
 let log_trip_ok () = log " %a@." green "OK"
 let log_trip_error e = log "@\n%a: %s@\n@." red "Error" e
@@ -19,7 +19,7 @@ let log_final_result span n fail =
 
 let hexdump ~dst bytes =
   let bytes_dump = Fpath.(dst + ".bytes") in
-  let* xxd = Os.Cmd.get Cmd.(atom "xxd") in
+  let* xxd = Os.Cmd.get Cmd.(arg "xxd") in
   let* () = Bigfile.write (Fpath.to_string bytes_dump) bytes in
   let* () = Os.Cmd.run Cmd.(xxd %% path bytes_dump %% path dst) in
   Ok dst
@@ -31,7 +31,7 @@ let diff file spec_bytes qoic_bytes =
     | `None -> "--color=never"
     | `Ansi -> "--color=always"
     in
-    Os.Cmd.get Cmd.(atom "git" % "diff" % "--no-index" % "--patience" % color)
+    Os.Cmd.get Cmd.(arg "git" % "diff" % "--no-index" % "--patience" % color)
   in
   let base = Fpath.(dir / basename file) in
   let* spec_hex = hexdump ~dst:Fpath.(base + ".spec") spec_bytes in

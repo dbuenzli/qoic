@@ -23,8 +23,9 @@ let test =
   let srcs = test_src "trip.ml" :: bigfile_srcs  in
   let requires = [ b0_std; qoic; unix ] in
   let meta =
-    B0_meta.(empty |> tag test |>
-             add B0_unit.Action.exec_cwd B0_unit.Action.scope_cwd)
+    B0_meta.empty
+    |> B0_meta.(tag test)
+    |> B0_meta.add B0_unit.Action.cwd `Scope_dir
   in
   let doc = "Round trip QOI images" in
   B0_ocaml.exe "trip" ~doc ~meta ~srcs ~requires
@@ -40,37 +41,37 @@ let example =
 
 let default =
   let meta =
-    let open B0_meta in
-    empty
-    |> add authors ["The qoic programmers"]
-    |> add maintainers ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
-    |> add homepage "https://erratique.ch/software/qoic"
-    |> add online_doc "https://erratique.ch/software/qoic/doc"
-    |> add licenses ["ISC"]
-    |> add repo "git+https://erratique.ch/repos/qoic.git"
-    |> add issues "https://github.com/dbuenzli/qoic/issues"
-    |> add description_tags ["codec"; "qoi"; "image"; "org:erratique"; ]
-    |> add B0_opam.Meta.build
+    B0_meta.empty
+    |> B0_meta.(add authors) ["The qoic programmers"]
+    |> B0_meta.(add maintainers)
+       ["Daniel Bünzli <daniel.buenzl i@erratique.ch>"]
+    |> B0_meta.(add homepage) "https://erratique.ch/software/qoic"
+    |> B0_meta.(add online_doc) "https://erratique.ch/software/qoic/doc"
+    |> B0_meta.(add licenses) ["ISC"]
+    |> B0_meta.(add repo) "git+https://erratique.ch/repos/qoic.git"
+    |> B0_meta.(add issues) "https://github.com/dbuenzli/qoic/issues"
+    |> B0_meta.(add description_tags) ["codec"; "qoi"; "image"; "org:erratique"]
+    |> B0_meta.tag B0_opam.tag
+    |> B0_meta.add B0_opam.build
       {|[["ocaml" "pkg/pkg.ml" "build" "--dev-pkg" "%{dev}%"]]|}
-    |> tag B0_opam.tag
-    |> add B0_opam.Meta.depends
+    |> B0_meta.add B0_opam.depends
       [ "ocaml", {|>= "4.12.0"|};
         "ocamlfind", {|build|};
         "ocamlbuild", {|build|}; ]
   in
-  B0_pack.v "default" ~doc:"qoic package" ~meta ~locked:true @@
+  B0_pack.make "default" ~doc:"qoic package" ~meta ~locked:true @@
   B0_unit.list ()
 
-(* Cmdlets *)
+(* Actions *)
 
 let spec_images =
   let doc = "Download specification test images" in
-  B0_cmdlet.v "download-spec-images" ~doc @@
-  fun env _args -> B0_cmdlet.exit_of_result @@
+  B0_unit.of_action "download-spec-images" ~doc @@
+  fun env _ ~args ->
   let src = "https://qoiformat.org/qoi_test_images.zip" in
-  let dst = B0_cmdlet.in_scope_dir env (Fpath.v ("images")) in
-  let* curl = Os.Cmd.get (Cmd.atom "curl") in
-  let* unzip = Os.Cmd.get (Cmd.atom "unzip") in
+  let dst = B0_env.in_scope_dir env (Fpath.v "images") in
+  let* curl = B0_env.get_cmd env (Cmd.arg "curl") in
+  let* unzip = B0_env.get_cmd env (Cmd.arg "unzip") in
   let* tmp_zip = Os.Path.tmp ~name:"tmp-%s.zip" () in
   let* () =
     let outf = Os.Cmd.out_file ~force:true ~make_path:false tmp_zip in
