@@ -6,8 +6,8 @@
 open B0_std
 open Result.Syntax
 
-let green = Fmt.tty_string [`Fg `Green]
-let red = Fmt.tty_string [`Fg `Red]
+let green = Fmt.st [`Fg `Green]
+let red = Fmt.st [`Fg `Red]
 let log = Format.printf
 let log_trip_ok () = log " %a@." green "OK"
 let log_trip_error e = log "@\n%a: %s@\n@." red "Error" e
@@ -19,7 +19,7 @@ let log_final_result span n fail =
 
 let hexdump ~dst bytes =
   let bytes_dump = Fpath.(dst + ".bytes") in
-  let* xxd = Os.Cmd.get Cmd.(atom "xxd") in
+  let* xxd = Os.Cmd.get Cmd.(arg "xxd") in
   let* () = Bigfile.write (Fpath.to_string bytes_dump) bytes in
   let* () = Os.Cmd.run Cmd.(xxd %% path bytes_dump %% path dst) in
   Ok dst
@@ -27,11 +27,11 @@ let hexdump ~dst bytes =
 let diff file spec_bytes qoic_bytes =
   Result.retract @@ Result.join @@ Os.Dir.with_tmp @@ fun dir ->
   let* diff =
-    let color = match Fmt.tty_cap () with
-    | `None -> "--color=never"
-    | `Ansi -> "--color=always"
+    let color = match Fmt.styler () with
+    | Fmt.Plain -> "--color=never"
+    | Fmt.Ansi -> "--color=always"
     in
-    Os.Cmd.get Cmd.(atom "git" % "diff" % "--no-index" % "--patience" % color)
+    Os.Cmd.get Cmd.(arg "git" % "diff" % "--no-index" % "--patience" % color)
   in
   let base = Fpath.(dir / basename file) in
   let* spec_hex = hexdump ~dst:Fpath.(base + ".spec") spec_bytes in
@@ -73,7 +73,6 @@ let main () =
   let rev_files = ref [] in
   let pos s = rev_files := Fpath.v s :: !rev_files in
   Arg.parse [] pos usage;
-  Fmt.set_tty_cap ();
   trips (List.rev !rev_files)
 
 let () = if !Sys.interactive then () else exit (main ())
