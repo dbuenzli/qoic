@@ -5,7 +5,8 @@
 
 type fpath = string
 type bigbytes =
-  (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  (int, Stdlib.Bigarray.int8_unsigned_elt, Stdlib.Bigarray.c_layout)
+    Stdlib.Bigarray.Array1.t
 
 val read : fpath -> (bigbytes, string) result
 val write : fpath -> bigbytes -> (unit, string) result

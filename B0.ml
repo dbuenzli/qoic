@@ -5,11 +5,6 @@ open Result.Syntax
 
 let qoic = B0_ocaml.libname "qoic"
 let unix = B0_ocaml.libname "unix"
-
-(* FIXME this is needed for now because of
-   https://github.com/ocaml/ocaml/issues/10833 *)
-let bigarray = B0_ocaml.libname "bigarray"
-
 let b0_std = B0_ocaml.libname "b0.std"
 
 (* Libraries *)
@@ -26,7 +21,7 @@ let bigfile_srcs = [test_src "bigfile.mli"; test_src "bigfile.ml" ]
 
 let test =
   let srcs = test_src "trip.ml" :: bigfile_srcs  in
-  let requires = [ b0_std; qoic; unix; bigarray ] in
+  let requires = [ b0_std; qoic; unix ] in
   let meta =
     B0_meta.(empty |> tag test |>
              add B0_unit.Action.exec_cwd B0_unit.Action.scope_cwd)
@@ -36,7 +31,7 @@ let test =
 
 let example =
   let srcs = test_src "example.ml" :: bigfile_srcs  in
-  let requires = [ qoic; unix; bigarray ] in
+  let requires = [ qoic; unix ] in
   let meta = B0_meta.empty |> B0_meta.tag B0_meta.test in
   let doc = "Sample code" in
   B0_ocaml.exe "example" ~doc ~meta ~srcs ~requires

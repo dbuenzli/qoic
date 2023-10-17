@@ -6,11 +6,12 @@
 type fpath = string
 
 type bigbytes =
-  (int, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  (int, Stdlib.Bigarray.int8_unsigned_elt, Stdlib.Bigarray.c_layout)
+    Stdlib.Bigarray.Array1.t
 
 let map_bytes ?(len = -1) ~write fd =
-  let t = Bigarray.int8_unsigned and l = Bigarray.C_layout in
-  Bigarray.array1_of_genarray (Unix.map_file fd t l write [|len|])
+  let t = Stdlib.Bigarray.int8_unsigned and l = Bigarray.C_layout in
+  Stdlib.Bigarray.array1_of_genarray (Unix.map_file fd t l write [|len|])
 
 let error f e = Error (Printf.sprintf "%s: %s" f (Unix.error_message e))
 
@@ -27,8 +28,9 @@ let write file bytes =
     let fd = Unix.openfile file Unix.[O_CREAT; O_RDWR; O_TRUNC] 0o644 in
     let finally () = try Unix.close fd with Unix.Unix_error _ -> () in
     Fun.protect ~finally @@ fun () ->
-    let dst = map_bytes ~len:(Bigarray.Array1.dim bytes) ~write:true fd in
-    Ok (Bigarray.Array1.blit bytes dst)
+    let len = Stdlib.Bigarray.Array1.dim bytes in
+    let dst = map_bytes ~len ~write:true fd in
+    Ok (Stdlib.Bigarray.Array1.blit bytes dst)
   with
   | Unix.Unix_error (e, _, _) -> error file e
 
