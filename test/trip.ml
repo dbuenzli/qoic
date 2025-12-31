@@ -53,7 +53,11 @@ let trip file =
 
 let default_files () =
   let default_dir = Fpath.v "images" in
-  let* fs = Os.Dir.fold_files ~recurse:true Os.Dir.path_list default_dir [] in
+  let* fs =
+    let dotfiles = false and follow_symlinks = false and recurse = true in
+    Os.Dir.fold_files
+      ~dotfiles ~follow_symlinks ~recurse Os.Dir.path_list default_dir []
+  in
   Ok (List.rev (List.filter (Fpath.has_ext ".qoi") fs))
 
 let trips files =
