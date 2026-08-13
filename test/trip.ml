@@ -18,9 +18,9 @@ let log_final_result span n fail =
   else log "[ %a ] All %d file(s) round trip in %a.@." green "OK" n pp_span span
 
 let hexdump ~dst bytes =
-  let bytes_dump = Fpath.(dst + ".bytes") in
+  let bytes_dump = Filepath.(dst + ".bytes") in
   let* xxd = Os.Cmd.get Cmd.(arg "xxd") in
-  let* () = Bigfile.write (Fpath.to_string bytes_dump) bytes in
+  let* () = Bigfile.write (Filepath.to_string bytes_dump) bytes in
   let* () = Os.Cmd.run Cmd.(xxd %% path bytes_dump %% path dst) in
   Ok dst
 
@@ -33,32 +33,32 @@ let diff file spec_bytes qoic_bytes =
     in
     Os.Cmd.get Cmd.(arg "git" % "diff" % "--no-index" % "--patience" % color)
   in
-  let base = Fpath.(dir / basename file) in
-  let* spec_hex = hexdump ~dst:Fpath.(base + ".spec") spec_bytes in
-  let* qoic_hex = hexdump ~dst:Fpath.(base + ".qoic") qoic_bytes in
-  let diff = Cmd.(diff % Fpath.basename spec_hex % Fpath.basename qoic_hex) in
+  let base = Filepath.(dir / basename file) in
+  let* spec_hex = hexdump ~dst:Filepath.(base + ".spec") spec_bytes in
+  let* qoic_hex = hexdump ~dst:Filepath.(base + ".qoic") qoic_bytes in
+  let diff = Cmd.(diff % Filepath.basename spec_hex % Filepath.basename qoic_hex) in
   Result.map snd (Os.Cmd.run_status_out ~trim:false ~cwd:dir diff)
 
 let trip file =
-  log "Trip %a@?" Fpath.pp_unquoted file;
-  let* bytes = Bigfile.read (Fpath.to_string file) in
+  log "Trip %a@?" Filepath.pp_unquoted file;
+  let* bytes = Bigfile.read (Filepath.to_string file) in
   let* meta, pixels = Qoic.decode' bytes in
   log " %a@?" Qoic.Meta.pp meta;
   let bytes' = Qoic.encode meta pixels in
   if bytes <> bytes' then
-    let outf = Fpath.to_string Fpath.(file -+ "-notrip.qoi") in
+    let outf = Filepath.to_string Filepath.(file -+ "-notrip.qoi") in
     let* () = Bigfile.write outf bytes' in
     Error ("\n" ^ diff file bytes bytes')
   else Ok ()
 
 let default_files () =
-  let default_dir = Fpath.v "images" in
+  let default_dir = Filepath.v "images" in
   let* fs =
     let dotfiles = false and follow_symlinks = false and recurse = true in
     Os.Dir.fold_files
       ~dotfiles ~follow_symlinks ~recurse Os.Dir.path_list default_dir []
   in
-  Ok (List.rev (List.filter (Fpath.has_ext ".qoi") fs))
+  Ok (List.rev (List.filter (Filepath.has_ext ".qoi") fs))
 
 let trips files =
   Log.if_error ~use:1 @@
@@ -75,7 +75,7 @@ let trips files =
 let main () =
   let usage = "Usage: trip [FILE.qoi]…" in
   let rev_files = ref [] in
-  let pos s = rev_files := Fpath.v s :: !rev_files in
+  let pos s = rev_files := Filepath.v s :: !rev_files in
   Arg.parse [] pos usage;
   trips (List.rev !rev_files)
 

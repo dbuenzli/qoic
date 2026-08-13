@@ -10,13 +10,13 @@ let b0_std = B0_ocaml.libname "b0.std"
 (* Libraries *)
 
 let qoic_lib =
-  let srcs = Fpath.[ `Dir (v "src") ] in
+  let srcs = Filepath.[ `Dir (v "src") ] in
   let requires = [] in
   B0_ocaml.lib qoic ~doc:"Qoic library" ~srcs ~requires
 
 (* Tests *)
 
-let test_src f = `File (Fpath.v (Fmt.str "test/%s" f))
+let test_src f = `File (Filepath.v (Fmt.str "test/%s" f))
 let bigfile_srcs = [test_src "bigfile.mli"; test_src "bigfile.ml" ]
 
 let test =
@@ -69,7 +69,7 @@ let spec_images =
   B0_unit.of_action "download-spec-images" ~doc @@
   fun env _ ~args ->
   let src = "https://qoiformat.org/qoi_test_images.zip" in
-  let dst = B0_env.in_scope_dir env (Fpath.v "images") in
+  let dst = B0_env.in_scope_dir env (Filepath.v "images") in
   let* curl = B0_env.get_cmd env (Cmd.arg "curl") in
   let* unzip = B0_env.get_cmd env (Cmd.arg "unzip") in
   let* tmp_zip = Os.Path.tmp ~name:"tmp-%s.zip" () in
